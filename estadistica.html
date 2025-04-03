@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora Estadística</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #ffe6f2;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background-color: #ff69b4;
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .team {
+            background-color: #ffb6c1;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .team h2 {
+            margin-top: 0;
+            color: #d63384;
+        }
+        
+        .team ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        
+        .team li {
+            margin: 8px 0;
+            font-size: 18px;
+        }
+        
+        .calculator {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .calculator h2 {
+            color: #d63384;
+            margin-top: 0;
+        }
+        
+        input, button, select {
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ffb6c1;
+            border-radius: 4px;
+        }
+        
+        button {
+            background-color: #ff69b4;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #d63384;
+        }
+        
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #fff0f5;
+            border-radius: 8px;
+        }
+        
+        .charts {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        
+        .chart {
+            flex-basis: 48%;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .chart {
+                flex-basis: 100%;
+            }
+        }
+        
+        canvas {
+            max-width: 100%;
+            height: auto;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px 0;
+            background-color: #ff69b4;
+            color: white;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Calculadora Estadística</h1>
+            <p>Herramienta para cálculos de medidas de tendencia central y visualización de datos</p>
+        </header>
+        
+        <section class="team">
+            <h2>Nuestro Equipo</h2>
+            <ul>
+                <li>José Argueta Gracia</li>
+                <li>Brissia Guadalupe Esteban López</li>
+                <li>Camila Gómez González</li>
+            </ul>
+        </section>
+        
+        <section class="calculator">
+            <h2>Calculadora de Medidas Estadísticas</h2>
+            <div>
+                <p>Ingresa tus datos separados por comas:</p>
+                <input type="text" id="data-input" placeholder="Ej: 5, 10, 15, 20, 25">
+                <button onclick="calcularEstadisticas()">Calcular</button>
+            </div>
+            
+            <div class="results" id="results">
+                <h3>Resultados:</h3>
+                <p>Media: <span id="media">-</span></p>
+                <p>Mediana: <span id="mediana">-</span></p>
+                <p>Moda: <span id="moda">-</span></p>
+            </div>
+        </section>
+        
+        <div class="charts">
+            <section class="chart">
+                <h2>Histograma</h2>
+                <div>
+                    <canvas id="histograma"></canvas>
+                </div>
+                <button onclick="generarEjemploHistograma()">Generar Ejemplo</button>
+            </section>
+            
+            <section class="chart">
+                <h2>Gráfica de Barras</h2>
+                <div>
+                    <canvas id="barras"></canvas>
+                </div>
+                <button onclick="generarEjemploBarras()">Generar Ejemplo</button>
+            </section>
+        </div>
+        
+        <footer>
+            <p>&copy; 2025 Calculadora Estadística - Todos los derechos reservados</p>
+        </footer>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
+    <script>
+        // Variables para almacenar las instancias de los gráficos
+        let histogramaChart = null;
+        let barrasChart = null;
+        
+        // Función para calcular la media
+        function calcularMedia(datos) {
+            const suma = datos.reduce((total, valor) => total + valor, 0);
+            return suma / datos.length;
+        }
+        
+        // Función para calcular la mediana
+        function calcularMediana(datos) {
+            const datosOrdenados = [...datos].sort((a, b) => a - b);
+            const mitad = Math.floor(datosOrdenados.length / 2);
+            
+            if (datosOrdenados.length % 2 === 0) {
+                return (datosOrdenados[mitad - 1] + datosOrdenados[mitad]) / 2;
+            } else {
+                return datosOrdenados[mitad];
+            }
+        }
+        
+        // Función para calcular la moda
+        function calcularModa(datos) {
+            const frecuencias = {};
+            datos.forEach(valor => {
+                frecuencias[valor] = (frecuencias[valor] || 0) + 1;
+            });
+            
+            let maxFrecuencia = 0;
+            let moda = [];
+            
+            for (const valor in frecuencias) {
+                if (frecuencias[valor] > maxFrecuencia) {
+                    maxFrecuencia = frecuencias[valor];
+                    moda = [Number(valor)];
+                } else if (frecuencias[valor] === maxFrecuencia) {
+                    moda.push(Number(valor));
+                }
+            }
+            
+            if (moda.length === Object.keys(frecuencias).length) {
+                return "No hay moda";
+            }
+            
+            return moda.join(", ");
+        }
+        
+        // Función principal para calcular estadísticas
+        function calcularEstadisticas() {
+            const inputDatos = document.getElementById('data-input').value;
+            const datos = inputDatos.split(',').map(val => Number(val.trim())).filter(val => !isNaN(val));
+            
+            if (datos.length === 0) {
+                alert("Por favor ingresa datos válidos separados por comas.");
+                return;
+            }
+            
+            const media = calcularMedia(datos);
+            const mediana = calcularMediana(datos);
+            const moda = calcularModa(datos);
+            
+            document.getElementById('media').textContent = media.toFixed(2);
+            document.getElementById('mediana').textContent = mediana.toFixed(2);
+            document.getElementById('moda').textContent = moda;
+            
+            // Generar histograma con los datos ingresados
+            generarHistograma(datos);
+            // Generar gráfica de barras con los datos ingresados
+            generarBarras(datos);
+        }
+        
+        // Función para generar histograma
+        function generarHistograma(datos) {
+            const ctx = document.getElementById('histograma').getContext('2d');
+            
+            // Destruir gráfico anterior si existe
+            if (histogramaChart) {
+                histogramaChart.destroy();
+            }
+            
+            // Calcular bins para el histograma
+            const min = Math.min(...datos);
+            const max = Math.max(...datos);
+            const rango = max - min;
+            const numBins = Math.ceil(Math.sqrt(datos.length)); // Regla de Sturges simplificada
+            const anchoBin = rango / numBins;
+            
+            const bins = Array(numBins).fill(0);
+            const etiquetasBins = [];
+            
+            // Crear etiquetas de bins
+            for (let i = 0; i < numBins; i++) {
+                const limiteInferior = min + (i * anchoBin);
+                const limiteSuperior = min + ((i + 1) * anchoBin);
+                etiquetasBins.push(`${limiteInferior.toFixed(1)}-${limiteSuperior.toFixed(1)}`);
+            }
+            
+            // Contar frecuencias
+            datos.forEach(valor => {
+                const indiceBin = Math.min(
+                    Math.floor((valor - min) / anchoBin),
+                    numBins - 1
+                );
+                bins[indiceBin]++;
+            });
+            
+            // Crear gráfico
+            histogramaChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: etiquetasBins,
+                    datasets: [{
+                        label: 'Frecuencia',
+                        data: bins,
+                        backgroundColor: 'rgba(255, 105, 180, 0.7)',
+                        borderColor: 'rgba(214, 51, 132, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Frecuencia'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Intervalo'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Histograma de Datos'
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Función para generar gráfica de barras
+        function generarBarras(datos) {
+            const ctx = document.getElementById('barras').getContext('2d');
+            
+            // Destruir gráfico anterior si existe
+            if (barrasChart) {
+                barrasChart.destroy();
+            }
+            
+            // Contar frecuencia de cada valor
+            const frecuencias = {};
+            datos.forEach(valor => {
+                frecuencias[valor] = (frecuencias[valor] || 0) + 1;
+            });
+            
+            const valoresUnicos = Object.keys(frecuencias).map(Number).sort((a, b) => a - b);
+            const frecuenciasArray = valoresUnicos.map(valor => frecuencias[valor]);
+            
+            // Crear gráfico
+            barrasChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: valoresUnicos,
+                    datasets: [{
+                        label: 'Frecuencia',
+                        data: frecuenciasArray,
+                        backgroundColor: 'rgba(255, 182, 193, 0.7)',
+                        borderColor: 'rgba(255, 105, 180, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Frecuencia'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Valor'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Gráfica de Barras'
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Ejemplo de histograma
+        function generarEjemploHistograma() {
+            const datosEjemplo = [
+                65, 72, 78, 64, 70, 68, 73, 75, 69, 71,
+                66, 74, 67, 63, 77, 79, 76, 70, 72, 68,
+                71, 73, 69, 72, 70, 74, 68, 75, 69, 71
+            ];
+            
+            generarHistograma(datosEjemplo);
+            
+            // Mostrar en la calculadora
+            document.getElementById('data-input').value = datosEjemplo.join(', ');
+            document.getElementById('media').textContent = calcularMedia(datosEjemplo).toFixed(2);
+            document.getElementById('mediana').textContent = calcularMediana(datosEjemplo).toFixed(2);
+            document.getElementById('moda').textContent = calcularModa(datosEjemplo);
+        }
+        
+        // Ejemplo de gráfica de barras
+        function generarEjemploBarras() {
+            const datosEjemplo = [
+                1, 2, 2, 3, 3, 3, 4, 4, 4, 4,
+                5, 5, 5, 5, 5, 6, 6, 6, 7, 7
+            ];
+            
+            generarBarras(datosEjemplo);
+            
+            // Mostrar en la calculadora
+            document.getElementById('data-input').value = datosEjemplo.join(', ');
+            document.getElementById('media').textContent = calcularMedia(datosEjemplo).toFixed(2);
+            document.getElementById('mediana').textContent = calcularMediana(datosEjemplo).toFixed(2);
+            document.getElementById('moda').textContent = calcularModa(datosEjemplo);
+        }
+    </script>
+</body>
+</html>
